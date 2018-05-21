@@ -70,3 +70,22 @@ Git的版本库中存了很多东西，最重要的有暂存区(stage)，还有g
 ### 删除文件
 * 命令`git rm`用于删除一个文件。如果一个文件已经被提交到版本库，那么你永远不用担心误删，但是要小心，你只能恢复文件到最新版本，你会丢失最近一次提交后你修改的内容。
 * 不小心删错时，可以用`git checkout -- <file>`，轻松把误删文件恢复到最新版本。这个操作其实是用版本库里的版本替换工作区的版本，无论修改或删除都能一键还原。
+
+## 远程仓库
+除了可以自己搭建一台运行Git的服务器，还可以将代码先托管在GitHub(Git的远程仓库)上。
+
+由于本地Git和GitHub仓库之间是通过SSH加密的，所以需要一点设置：
+
+* 第1步：创建SSH key。在用户主目录下，看看有没有.ssh目录，如果有，再看看这个目录下有没有id_rsa和id_rsa.pub这两个文件，如果已经有了，可直接跳到下一步。如果没有，打开Shell（Windows下打开Git Bash），创建SSH Key：
+```
+$ ssh-keygen -t rsa -C "youremail@example.com"
+```
+如果一切顺利的话，可以在用户主目录里找到.ssh目录，里面有id_rsa和id_rsa.pub两个文件，这两个就是SSH Key的秘钥对，id_rsa是私钥，不能泄露出去，id_rsa.pub是公钥，可以放心地告诉任何人。
+
+* 第2步：登陆GitHub，打开“Account settings”，“SSH Keys”页面，然后，点“Add SSH Key”，填上任意Title，在Key文本框里粘贴id_rsa.pub文件的内容：
+![](https://cdn.liaoxuefeng.com/cdn/files/attachments/001384908342205cc1234dfe1b541ff88b90b44b30360da000/0)
+点“Add Key”，你就应该看到已经添加的Key。
+
+当然，GitHub允许你添加多个Key。假定你有若干电脑，你一会儿在公司提交，一会儿在家里提交，只要把每台电脑的Key都添加到GitHub，就可以在每台电脑上往GitHub推送了。
+
+### 添加远程库
