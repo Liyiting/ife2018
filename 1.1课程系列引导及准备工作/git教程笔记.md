@@ -89,3 +89,170 @@ $ ssh-keygen -t rsa -C "youremail@example.com"
 当然，GitHub允许你添加多个Key。假定你有若干电脑，你一会儿在公司提交，一会儿在家里提交，只要把每台电脑的Key都添加到GitHub，就可以在每台电脑上往GitHub推送了。
 
 ### 添加远程库
+* 首先登陆Github新建一个仓库"Create a new repo"
+* 在本地仓库下运行命令： 
+
+	```
+	git remote add origin git@github.com:michaelliao/learngit.git
+	```
+* 把本地库的内容推送到远程，用`git push`命令，实际上是把当前的分支`master`推送到远程。(`git push -u origin master`，默认叫法`origin`，也可以改成别的)
+* 由于远程库是空的，我们第一次推送到分支上时，加上了`-u`参数，Git不但会把本地的`master`分支内容推送到远程的`master`分支，还会把本地的`master`分支和远程的`master`分支关联起来，在以后的推送或者拉取时就可以简化命令
+* 之后只要本地做了提交，就可以通过命令`git push origin master`把本地`master`分支的最新修改推送至Github
+
+**分布式版本系统的最大好处之一是在本地工作完全不需要考虑远程库的存在，有没有联网都可以正常工作，当有网络的时候，再把本地提交推送一下就完成了同步。而SVN在没有联网的时候是无法工作的。**
+
+### 从远程库克隆
+*如果从0开发，最好的方式是先创建远程库，然后从远程库克隆*
+
+* 知道仓库地址后，使用`git clone`命令克隆
+
+	```
+	git clone git@github.com:michaelliao/gitskills.git
+	```
+* Git支持多种协议，包括`https`，但通过`ssh`支持原生`git`协议速度最快
+
+## 分支管理
+*可以创建属于自己的分支，等到开发完毕后再一次性合并到原来的分支上，这样既安全又不影响别人工作。*
+
+### 创建与合并分支
+
+* `HEAD`严格来说不指向提交，而是指向`master`，而`master`才是指向提交的，所以，`HEAD`就是只想当前的分支。
+
+* 每次提交`master`分支都会向前移动一步，这样随着不断提交，`master`分支的线也越来越长。
+
+* 当创建新的分支(例如`dev`)时，Git新建了一个指针叫`dev`，指向`master`相同的提交，再把`HEAD`指向`dev`,就标识当前分支在`dev`上
+* 再对工作区的修改和提交就是针对`dev`分支了，比如新提交一次后，`dev`指针往前移动一步，而`master`指针不变。
+![](https://cdn.liaoxuefeng.com/cdn/files/attachments/0013849088235627813efe7649b4f008900e5365bb72323000/0)
+* 加入在`dev`上的工作完成了，就可以把`dev`合并到`master`上。就是直接把`master`指向`dev`的当前提交，就完成了合并
+![](https://cdn.liaoxuefeng.com/cdn/files/attachments/00138490883510324231a837e5d4aee844d3e4692ba50f5000/0)
+
+* 所以合并分支就是相当于修改了指针，工作区内容不变。
+* 合并完分之后，甚至可以删除`dev`分支。删除`dev`分支就是把`dev`指针给删掉，删掉后，我们就剩下了一条`matser`分支。
+
+实战:
+
+```
+//创建`dev`分支，然后切换到`dev`分支
+git checkout -b dev
+
+//`git checkout`命令加上`-b`参数表示创建并切换，相当于以下两条命令：
+git branch dev
+git checkout dev
+
+//然后用`git branch`命令查看当前分支，`git branch`就会列出所有分支，当前分支前面会标一个`*`号。
+git branch
+
+//我们就可以在`dev`分支上正常提交，比如对readme.txt做个修改
+git add readme.txt
+git commit -m "branch test"
+
+//`dev`分支的工作完成后，我们就可以切换回`master`分支，切换后不会显示刚才的修改。
+git checkout master
+
+//把dev分支的工作成果合并到`master`分支上
+git merge dev
+
+//合并完成后，就可以放心地删除`dev`分支了
+git branch -d dev
+```
+**因为创建、合并和删除分支非常快，所以Git鼓励你使用分支完成某个任务，合并后再删除分支，这和直接在`master`分支上工作效果是一样的，但过程更安全**
+
+###解决冲突
+* `master`分支和`feature1`分支都各自有了新的提交。这种情况下，Git无法执行“快速合并”，只能试图把各自的修改合并起来，但这种合并就可能会有冲突。
+![](https://cdn.liaoxuefeng.com/cdn/files/attachments/001384909115478645b93e2b5ae4dc78da049a0d1704a41000/0)
+
+* `git status`也可以告诉我们冲突的文件
+* 手动修改之后再做保存，之后再提交就可以了
+```
+git add readme.txt
+git commit -m "conflict fixed"
+```
+![](https://cdn.liaoxuefeng.com/cdn/files/attachments/00138490913052149c4b2cd9702422aa387ac024943921b000/0)
+
+* 用带参数的`git log`可以看到分支的合并情况
+
+```
+git log --graph --pretty==online --abbrev-commit
+```
+
+* 最后删除`feature1`分支`git branch -d feature`
+
+### 分支管理策略
+合并分支时，加上`--no-ff`参数就可以用普通模式合并，合并后的历史有分支，能看出来曾经做过合并，而**fast forward**合并就看不出来曾经做过合并。
+
+### Bug分支
+*软件开发中，bug就像家常便饭一样。有了bug就需要修复，在Git中，由于分支是如此的强大，所以，每个bug都可以通过一个新的临时分支来修复，修复后，合并分支，然后将临时分支删除。*
+* 修复bug时，我们会通过创建新的bug分支进行修复，然后合并，最后删除；
+
+* 当手头工作没有完成时，先把工作现场`git stash`一下，然后去修复bug，修复后，再git stash pop，回到工作现场。
+
+### Feature分支
+*添加一个新功能时，你肯定不希望因为一些实验性质的代码，把主分支搞乱了，所以，每添加一个新功能，最好新建一个feature分支，在上面开发，完成后，合并，最后，删除该feature分支。*
+如果要丢弃一个没有被合并过的分支，可以通过`git branch -D <name>`强行删除
+
+### 多人协作
+* 查看远程库信息，使用git remote -v；
+
+* 本地新建的分支如果不推送到远程，对其他人就是不可见的；
+
+* 从本地推送分支，使用git push origin branch-name，如果推送失败，先用git pull抓取远程的新提交；
+
+* 在本地创建和远程分支对应的分支，使用git checkout -b branch-name origin/branch-name，本地和远程分支的名称最好一致；
+
+* 建立本地分支和远程分支的关联，使用git branch --set-upstream branch-name origin/branch-name；
+
+* 从远程抓取分支，使用git pull，如果有冲突，要先处理冲突。
+
+### Rebase
+* rebase操作可以把本地未push的分叉提交历史整理成直线；
+
+* rebase的目的是使得我们在查看历史提交的变化时更容易，因为分叉的提交需要三方对比。
+
+## 标签管理
+**tag就是一个让人容易记住的有意义的名字，它和某个commit绑在一起**
+
+### 创建标签
+* 命令`git tag <tagname>`用于新建一个标签，默认为HEAD，也可以指定一个commit id；
+
+* 命令`git tag -a <tagname> -m "blablabla..."`可以指定标签信息；
+
+* 命令`git tag`可以查看所有标签。
+
+### 操作标签
+* 命令`git push origin <tagname>`可以推送一个本地标签；
+
+* 命令`git push origin --tags`可以推送全部未推送过的本地标签；
+
+* 命令`git tag -d <tagname>`可以删除一个本地标签；
+
+* 命令`git push origin :refs/tags/<tagname>`可以删除一个远程标签。
+
+## 使用Github
+* 在GitHub上，可以任意Fork开源仓库；
+
+* 自己拥有Fork后的仓库的读写权限；
+
+* 可以推送pull request给官方仓库来贡献代码。
+
+## 码云
+使用Github有时候会遇到访问速度慢的问题。
+可以使用国内的Git托管服务 码云(gitee.com)
+码云也提供免费的Git仓库。此外，还集成了代码质量检测、项目演示等功能。对于团队协作开发，码云还提供了项目管理、代码托管、文档管理的服务，5人以下小团队免费。
+
+## 自定义Git
+* 比如让git显示颜色：
+```
+git config --global color.ui true
+```
+
+* 忽略某些文件时，需要编写`.gitignore`
+* `.gitignore`文件本身要放到版本库里，并且可以对.gitignore做版本管理！
+
+* 给Git配置好别名，就可以输入命令时偷个懒。我们鼓励偷懒。
+
+	```
+	//设置完就可以使用 git st 代替 git status啦
+	git config --global alias.st status
+	```
+* 搭建Git服务器非常简单，通常10分钟即可完成；要方便管理公钥，用Gitosis；
+要像SVN那样变态地控制权限，用Gitolite。
